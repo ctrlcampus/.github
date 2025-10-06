@@ -2,7 +2,7 @@ name: AI Auto Review (for @bharathnallamothu)
 
 on:
   pull_request:
-    types: [review_requested, ready_for_review]
+    types: [opened, reopened, review_requested, ready_for_review]
 
 permissions:
   contents: read
@@ -11,11 +11,15 @@ permissions:
 
 jobs:
   ai_review:
+    name: AI Code Review Job
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.requested_reviewers.*.login, 'bharathnallamothu')
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
 
       - name: Fetch PR diff
         run: |
@@ -23,6 +27,13 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3.diff" \
             ${{ github.event.pull_request.url }} > pr.diff
+
+      - name: Check diff
+        run: |
+          if [ ! -s pr.diff ]; then
+            echo "No changes detected. Skipping AI review."
+            exit 0
+          fi
 
       - name: Generate AI Review
         run: |
@@ -45,4 +56,4 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
-            -d "{\"body\": \"🤖 **AI Review (requested for @bharathnallamothu ):**\n\n$(cat review.txt | jq -s -R .)\"}"
+            -d "{\"body\": \"🤖 **AI Review (requested for @bharathnallamothu):**\n\n$(cat review.txt | jq -s -R .)\"}"
