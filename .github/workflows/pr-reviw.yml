@@ -1,0 +1,48 @@
+name: AI Auto Review (for @ChandraUpendra22)
+
+on:
+  pull_request:
+    types: [review_requested, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai_review:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.requested_reviewers.*.login, 'ChandraUpendra22')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch PR diff
+        run: |
+          curl -s \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            ${{ github.event.pull_request.url }} > pr.diff
+
+      - name: Generate AI Review
+        run: |
+          REVIEW=$(curl -s https://api.openai.com/v1/chat/completions \
+            -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "gpt-4o-mini",
+              "messages": [
+                {"role": "system", "content": "You are an expert senior code reviewer. Review the following pull request diff and provide concise, actionable feedback focusing on code quality, logic errors, performance, and readability."},
+                {"role": "user", "content": "'"$(cat pr.diff)"'"}
+              ]
+            }' | jq -r '.choices[0].message.content')
+
+          echo "$REVIEW" > review.txt
+
+      - name: Post Review Comment
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            -d "{\"body\": \"🤖 **AI Review (requested for @ChandraUpendra22):**\n\n$(cat review.txt | jq -s -R .)\"}"
