@@ -1,0 +1,21 @@
+name: Notify when PR Ready for Review
+
+on:
+  pull_request:
+    types: [ready_for_review]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send PR notification to Teams
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"📢 *Pull Request Ready for Review!*\n
+              🧑 Author: ${{ github.event.pull_request.user.login }}\n
+              🏷️ Title: ${{ github.event.pull_request.title }}\n
+              🔗 Link: ${{ github.event.pull_request.html_url }}\"
+            }" \
+            "${{ secrets.TEAMS_PULL_REQUEST_WEBHOOK_URL }}"
