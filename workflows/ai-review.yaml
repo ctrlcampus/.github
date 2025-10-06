@@ -1,4 +1,4 @@
-name: AI Auto Review (for @ChandraUpendra22)
+name: AI Auto Review (for @bharathnallamothu)
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
 jobs:
   ai_review:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.requested_reviewers.*.login, 'ChandraUpendra22')
+    if: contains(github.event.pull_request.requested_reviewers.*.login, 'bharathnallamothu')
 
     steps:
       - name: Checkout PR branch
@@ -24,7 +24,7 @@ jobs:
       - name: Generate AI Review
         id: ai
         run: |
-          echo "Generating AI review for @ChandraUpendra22 ..."
+          echo "Generating AI review for @bharathnallamothu ..."
           REVIEW=$(curl -s https://api.openai.com/v1/chat/completions \
             -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
             -H "Content-Type: application/json" \
@@ -44,4 +44,4 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
-            -d "{\"body\": \"🤖 **AI Review (requested for @ChandraUpendra22):**\n\n$(cat review.txt | jq -s -R .)\"}"
+            -d "{\"body\": \"🤖 **AI Review (requested for @bharathnallamothu):**\n\n$(cat review.txt | jq -s -R .)\"}"
